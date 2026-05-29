@@ -124,19 +124,34 @@ interface Stats {
 }
 
 // ============================
-// Voice Dictation Hook
+// Voice Dictation Hook (Web Speech API + Audio Recording Fallback)
 // ============================
 function useVoiceDictation() {
   const [isListening, setIsListening] = useState(false)
   const [activeField, setActiveField] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [supported, setSupported] = useState<'native' | 'recorder' | 'none'>('none')
   const recognitionRef = useRef<unknown>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
   const callbackRef = useRef<((transcript: string, isFinal: boolean) => void) | null>(null)
 
-  const startListening = useCallback((fieldId: string, callback: (transcript: string, isFinal: boolean) => void) => {
+  // Check support on mount
+  useEffect(() => {
     const SpeechRecognitionAPI = (window as unknown as { SpeechRecognition?: typeof window.SpeechRecognition; webkitSpeechRecognition?: typeof window.SpeechRecognition }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof window.SpeechRecognition }).webkitSpeechRecognition
-    if (!SpeechRecognitionAPI) {
-      return
+    if (SpeechRecognitionAPI) {
+      setSupported('native')
+    } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      setSupported('recorder')
+    } else {
+      setSupported('none')
     }
+  }, [])
+
+  // Native Web Speech API
+  const startNativeListening = useCallback((fieldId: string, callback: (transcript: string, isFinal: boolean) => void) => {
+    const SpeechRecognitionAPI = (window as unknown as { SpeechRecognition?: typeof window.SpeechRecognition; webkitSpeechRecognition?: typeof window.SpeechRecognition }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof window.SpeechRecognition }).webkitSpeechRecognition
+    if (!SpeechRecognitionAPI) return false
 
     if (isListening && recognitionRef.current) {
       (recognitionRef.current as { stop: () => void }).stop()
@@ -179,11 +194,68 @@ function useVoiceDictation() {
     setActiveField(fieldId)
     setIsListening(true)
     recognition.start()
+    return true
   }, [isListening])
+
+  // Audio Recorder Fallback (sends to backend ASR)
+  const startRecorderListening = useCallback(async (fieldId: string, callback: (transcript: string, isFinal: boolean) => void) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      chunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
+      }
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        setIsListening(false)
+        setIsProcessing(true)
+
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const formData = new FormData()
+        formData.append('audio', blob, 'recording.webm')
+
+        try {
+          const res = await fetch('/api/asr', { method: 'POST', body: formData })
+          const data = await res.json()
+          if (data.transcription) {
+            callback(data.transcription, true)
+          }
+        } catch {
+          // silently fail
+        } finally {
+          setIsProcessing(false)
+          setActiveField(null)
+        }
+      }
+
+      mediaRecorderRef.current = mediaRecorder
+      callbackRef.current = callback
+      setActiveField(fieldId)
+      setIsListening(true)
+      mediaRecorder.start()
+    } catch {
+      setActiveField(null)
+    }
+  }, [])
+
+  const startListening = useCallback((fieldId: string, callback: (transcript: string, isFinal: boolean) => void) => {
+    if (supported === 'native') {
+      startNativeListening(fieldId, callback)
+    } else if (supported === 'recorder') {
+      startRecorderListening(fieldId, callback)
+    }
+  }, [supported, startNativeListening, startRecorderListening])
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
       (recognitionRef.current as { stop: () => void }).stop()
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop()
+      return // onstop will handle state
     }
     setIsListening(false)
     setActiveField(null)
@@ -197,7 +269,7 @@ function useVoiceDictation() {
     }
   }, [isListening, activeField, startListening, stopListening])
 
-  return { isListening, activeField, startListening, stopListening, toggleListening }
+  return { isListening, isProcessing, activeField, supported, startListening, stopListening, toggleListening }
 }
 
 // ============================
@@ -262,30 +334,51 @@ const CHART_COLORS = ['#0d9488', '#92400e', '#a8b5a0', '#14b8a6', '#b45309']
 // ============================
 // Micro Components
 // ============================
-function VoiceButton({ fieldId, voiceDictation, onTranscript }: {
+function VoiceButton({ fieldId, voiceDictation, onTranscript, existingText }: {
   fieldId: string
   voiceDictation: ReturnType<typeof useVoiceDictation>
   onTranscript: (text: string) => void
+  existingText?: string
 }) {
   const isActive = voiceDictation.isListening && voiceDictation.activeField === fieldId
+  const isProcessing = voiceDictation.isProcessing && voiceDictation.activeField === fieldId
+  const isNotSupported = voiceDictation.supported === 'none'
+  const isRecorderMode = voiceDictation.supported === 'recorder'
+
+  const handleClick = () => {
+    if (isNotSupported) return
+    voiceDictation.toggleListening(fieldId, (transcript, isFinal) => {
+      if (isFinal) {
+        // Append to existing text with a space if there's existing content
+        const newText = existingText ? existingText + ' ' + transcript : transcript
+        onTranscript(newText)
+      }
+    })
+  }
 
   return (
-    <Button
-      type="button"
-      variant={isActive ? 'destructive' : 'outline'}
-      size="sm"
-      className={`ml-2 shrink-0 ${isActive ? 'animate-pulse-recording' : ''}`}
-      onClick={() => {
-        voiceDictation.toggleListening(fieldId, (transcript, isFinal) => {
-          if (isFinal) {
-            onTranscript(transcript)
-          }
-        })
-      }}
-      title={isActive ? 'Detener dictado' : 'Iniciar dictado por voz'}
-    >
-      {isActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-    </Button>
+    <div className="ml-2 shrink-0 flex items-center gap-1">
+      {isProcessing && (
+        <span className="text-xs text-amber-600 animate-pulse">Procesando...</span>
+      )}
+      <Button
+        type="button"
+        variant={isActive ? 'destructive' : isNotSupported ? 'ghost' : 'outline'}
+        size="sm"
+        className={`${isActive ? 'animate-pulse-recording' : ''} ${isNotSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
+        onClick={handleClick}
+        disabled={isProcessing || isNotSupported}
+        title={
+          isNotSupported
+            ? 'Dictado no disponible en este navegador. Usá Chrome o Edge.'
+            : isRecorderMode
+              ? isActive ? 'Detener grabación y transcribir' : 'Grabar audio para transcribir (español)'
+              : isActive ? 'Detener dictado' : 'Iniciar dictado por voz (español)'
+        }
+      >
+        {isActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+      </Button>
+    </div>
   )
 }
 
@@ -1575,6 +1668,7 @@ function DashboardInformes() {
       onTranscript={(text) => {
         setForm(f => ({ ...f, [fieldName]: text }))
       }}
+      existingText={form[fieldName] as string}
     />
   )
 
@@ -1970,68 +2064,166 @@ function DashboardPagos() {
 function DashboardConfig() {
   const [config, setConfig] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetch('/api/seed', { method: 'POST' }).then(() => {
-      return fetch('/api/pacientes?search=&activo=')
-    }).then(() => {}).catch(() => {})
+  const loadConfig = useCallback(() => {
+    setLoading(true)
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => { setConfig(data); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
+  useEffect(() => { loadConfig() }, [loadConfig])
+
   const configFields = [
-    { key: 'nombre_clinica', label: 'Nombre de la Clínica' },
-    { key: 'nombre_psicologa', label: 'Nombre de la Psicóloga' },
-    { key: 'telefono_clinica', label: 'Teléfono' },
-    { key: 'email_clinica', label: 'Email' },
-    { key: 'direccion_clinica', label: 'Dirección' },
-    { key: 'precio_sesion_presencial', label: 'Precio Sesión Presencial ($)' },
-    { key: 'precio_sesion_online', label: 'Precio Sesión Online ($)' },
-    { key: 'duracion_sesion', label: 'Duración de Sesión (minutos)' },
+    { key: 'nombre_clinica', label: 'Nombre del Consultorio', placeholder: 'Espacios Inter' },
+    { key: 'nombre_psicologa', label: 'Nombre de la Psicóloga', placeholder: 'Lic. Silvia Hara' },
+    { key: 'telefono_clinica', label: 'Teléfono', placeholder: '11-5555-1234' },
+    { key: 'email_clinica', label: 'Email', placeholder: 'contacto@espaciosinter.com.ar' },
+    { key: 'direccion_clinica', label: 'Dirección', placeholder: 'Av. Las Heras 2456, CABA' },
+    { key: 'precio_sesion_presencial', label: 'Precio Sesión Presencial ($)', placeholder: '15000' },
+    { key: 'precio_sesion_online', label: 'Precio Sesión Online ($)', placeholder: '12000' },
+    { key: 'duracion_sesion', label: 'Duración de Sesión (minutos)', placeholder: '60' },
   ]
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await apiFetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      })
+      toast({ title: 'Configuración guardada', description: 'Los cambios se guardaron exitosamente.' })
+    } catch (err) {
+      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleReset = async () => {
+    setResetting(true)
+    try {
+      await apiFetch<{ message: string }>('/api/reset', { method: 'POST' })
+      toast({ title: 'Datos eliminados', description: 'Todos los datos fueron borrados. Podés cargar datos nuevos o usar los de ejemplo.' })
+      loadConfig()
+    } catch (err) {
+      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  const handleSeed = async () => {
+    setResetting(true)
+    try {
+      const res = await apiFetch<{ message: string }>('/api/seed', { method: 'POST' })
+      toast({ title: 'Datos de ejemplo cargados', description: res.message })
+      loadConfig()
+    } catch (err) {
+      toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
+    } finally {
+      setResetting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Configuración</h2>
-        <p className="text-muted-foreground">Ajustes del consultorio</p>
+        <p className="text-muted-foreground">Ajustes del consultorio Espacios Inter</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Datos del Consultorio</CardTitle>
-          <CardDescription>Información general de Espacios Inter</CardDescription>
+          <CardDescription>Editá la información general. Los cambios se guardan al presionar &quot;Guardar Cambios&quot;.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {configFields.map(field => (
             <div key={field.key} className="grid sm:grid-cols-3 gap-2 items-center">
               <Label className="sm:text-right">{field.label}</Label>
               <div className="sm:col-span-2">
-                <Input defaultValue={config[field.key] || ''} disabled={loading} />
+                <Input
+                  value={config[field.key] || ''}
+                  placeholder={field.placeholder}
+                  disabled={loading}
+                  onChange={e => setConfig(c => ({ ...c, [field.key]: e.target.value }))}
+                />
               </div>
             </div>
           ))}
+          <div className="flex justify-end pt-4">
+            <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleSave} disabled={saving || loading}>
+              {saving ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Guardando...</> : <><CheckCircle className="h-4 w-4 mr-2" /> Guardar Cambios</>}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Datos de Demo</CardTitle>
-          <CardDescription>Poblar la base de datos con datos de ejemplo</CardDescription>
+          <CardTitle>Gestión de Datos</CardTitle>
+          <CardDescription>Administrá los datos del sistema. Podés limpiar todo y empezar de cero, o cargar datos de ejemplo.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-50"
+              onClick={handleReset}
+              disabled={resetting}
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> Limpiar Todos los Datos
+            </Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700"
+              onClick={handleSeed}
+              disabled={resetting}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${resetting ? 'animate-spin' : ''}`} /> Cargar Datos de Ejemplo
+            </Button>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800 mb-1">¿Cómo cargar datos reales?</p>
+                <p className="text-amber-700">
+                  Andá a <strong>Pacientes</strong> y hacé clic en &quot;Nuevo Paciente&quot; para cargar datos reales.
+                  Luego podés crear turnos e informes clínicos desde las secciones correspondientes.
+                  Los datos de ejemplo son solo para probar el sistema.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Dictado por Voz</CardTitle>
+          <CardDescription>Información sobre el reconocimiento de voz en informes clínicos</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button
-            className="bg-teal-600 hover:bg-teal-700"
-            onClick={async () => {
-              try {
-                const res = await apiFetch<{ message: string }>('/api/seed', { method: 'POST' })
-                toast({ title: 'Base de datos poblada', description: res.message })
-              } catch (err) {
-                toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
-              }
-            }}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" /> Cargar Datos de Ejemplo
-          </Button>
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Mic className="h-5 w-5 text-teal-600 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-teal-800 mb-1">¿Cómo funciona el dictado?</p>
+                <ul className="text-teal-700 space-y-1 list-disc list-inside">
+                  <li>En <strong>Informes Clínicos</strong>, cada campo de texto tiene un botón de micrófono</li>
+                  <li>En <strong>Chrome o Edge</strong>: el dictado es en tiempo real (español argentino)</li>
+                  <li>En otros navegadores: grabás el audio y se transcribe al finalizar</li>
+                  <li>El texto dictado se agrega al contenido existente del campo</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

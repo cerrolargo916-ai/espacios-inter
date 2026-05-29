@@ -52,3 +52,25 @@ Stage Summary:
 - Seed data: 6 patients, 17 appointments, 4 clinical reports, 8 payments
 - All APIs tested and working
 - Lint passes with no errors
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: Fix voice dictation, add ASR fallback, make config functional, add data reset
+
+Work Log:
+- Created /api/asr endpoint using z-ai-web-dev-sdk for backend speech-to-text
+- Created /api/config endpoint (GET + PUT) for saving clinic settings
+- Created /api/reset endpoint to clear all data
+- Updated seed endpoint to allow re-seeding (clears first)
+- Rewrote useVoiceDictation hook with dual mode: native Web Speech API + Audio Recorder fallback
+- Updated VoiceButton with better feedback, processing indicator, tooltips
+- Voice text now appends to existing content instead of replacing
+- Rewrote DashboardConfig to be fully functional with save, reset, and seed buttons
+- Added voice dictation info card and data loading help
+
+Stage Summary:
+- Voice dictation works in two modes: native (Chrome/Edge) and recorder+ASR fallback
+- Configuration page saves settings to database
+- Reset endpoint clears all data for fresh start
+- Seed endpoint allows re-seeding after reset

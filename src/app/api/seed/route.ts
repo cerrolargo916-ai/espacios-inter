@@ -3,10 +3,14 @@ import { NextResponse } from 'next/server'
 
 export async function POST() {
   try {
-    const existingPacientes = await db.paciente.count()
-    if (existingPacientes > 0) {
-      return NextResponse.json({ message: 'La base de datos ya contiene datos', count: existingPacientes })
-    }
+    // Allow re-seeding by clearing existing data first
+    await db.informeClinico.deleteMany()
+    await db.pago.deleteMany()
+    await db.turno.deleteMany()
+    await db.paciente.deleteMany()
+    await db.configuracion.deleteMany()
+
+    const existingPacientes = 0
 
     const pacientes = await Promise.all([
       db.paciente.create({
