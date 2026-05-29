@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nombre    String
+  password  String
+  rol       String   @default("psicologo") // "psicologo" o "paciente"
+  telefono  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Paciente {
+  id             String   @id @default(cuid())
+  nombre         String
+  apellido       String
+  email          String
+  telefono       String?
+  fechaNacimiento String?
+  dni            String?
+  direccion      String?
+  obraSocial     String?
+  numeroAfiliado String?
+  contactoEmergencia String?
+  notas          String?
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  turnos         Turno[]
+  informes       InformeClinico[]
+  pagos          Pago[]
+}
+
+model Turno {
+  id          String   @id @default(cuid())
+  pacienteId  String
+  paciente    Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  fecha       DateTime
+  duracion    Int      @default(60) // minutos
+  modalidad   String   @default("presencial") // "presencial" o "online"
+  estado      String   @default("pendiente") // "pendiente", "confirmado", "cancelado", "completado"
+  notas       String?
+  precio      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  informes    InformeClinico[]
+  pagos       Pago[]
+}
+
+model InformeClinico {
+  id              String   @id @default(cuid())
+  pacienteId      String
+  paciente        Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  turnoId         String?
+  turno           Turno?   @relation(fields: [turnoId], references: [id])
+  fecha           DateTime @default(now())
+  tipo            String   @default("sesion") // "sesion", "evaluacion", "seguimiento"
+  motivoConsulta  String?
+  observaciones   String?
+  diagnostico     String?
+  planTratamiento String?
+  evolucion       String?
+  firmado         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Pago {
+  id              String   @id @default(cuid())
+  pacienteId      String
+  paciente        Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  turnoId         String?
+  turno           Turno?   @relation(fields: [turnoId], references: [id])
+  monto           Float
+  metodo          String   @default("efectivo") // "efectivo", "transferencia", "mercadopago", "debito", "credito"
+  estado          String   @default("pendiente") // "pendiente", "pagado", "reembolsado"
+  referencia      String?
+  fechaPago       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Configuracion {
+  id              String   @id @default(cuid())
+  clave           String   @unique
+  valor           String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
