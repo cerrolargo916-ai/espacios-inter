@@ -1,22 +1,33 @@
 'use client'
 
-import React, { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import React, { useState, useEffect } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Brain, Lock, Mail, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
+import { Brain, Lock, Mail, Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { motion } from 'framer-motion'
+import { useAppStore } from '@/lib/store'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
+  const { setCurrentView } = useAppStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      setCurrentView('psicologo')
+      router.push('/')
+    }
+  }, [status, session, setCurrentView, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +46,8 @@ export default function LoginPage() {
           ? 'Email o contraseña incorrectos'
           : result.error)
       } else {
+        // Set the store to show the dashboard
+        setCurrentView('psicologo')
         router.push('/')
         router.refresh()
       }
@@ -43,6 +56,18 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while checking existing session
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-700 via-teal-600 to-teal-800">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+          <p className="text-teal-100">Verificando sesión...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

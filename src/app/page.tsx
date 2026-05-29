@@ -434,9 +434,18 @@ function formatRelativeDate(dateStr: string) {
 // ============================
 function LandingPage() {
   const { setCurrentView } = useAppStore()
+  const { data: session } = useSession()
   const [contactForm, setContactForm] = useState({ nombre: '', email: '', telefono: '', mensaje: '' })
   const [contactSent, setContactSent] = useState(false)
   const { toast } = useToast()
+
+  const handleAccesoPsicologo = () => {
+    if (session) {
+      setCurrentView('psicologo')
+    } else {
+      window.location.href = '/login'
+    }
+  }
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -466,10 +475,10 @@ function LandingPage() {
                 <span className="hidden sm:inline">Portal Paciente</span>
                 <span className="sm:hidden">Paciente</span>
               </Button>
-              <Button size="sm" onClick={() => window.location.href = '/login'} className="bg-teal-600 hover:bg-teal-700">
+              <Button size="sm" onClick={handleAccesoPsicologo} className="bg-teal-600 hover:bg-teal-700">
                 <Stethoscope className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Acceso Psicólogo</span>
-                <span className="sm:hidden">Psicólogo</span>
+                <span className="hidden sm:inline">{session ? 'Mi Panel' : 'Acceso Psicólogo'}</span>
+                <span className="sm:hidden">{session ? 'Panel' : 'Psicólogo'}</span>
               </Button>
             </div>
           </div>
@@ -2811,9 +2820,11 @@ function PatientRecordatorios({ turnos }: { turnos: Turno[] }) {
 // MAIN PAGE
 // ============================
 export default function HomePage() {
-  const { currentView } = useAppStore()
+  const { currentView, setCurrentView } = useAppStore()
+  const { data: session, status } = useSession()
   const [seeded, setSeeded] = useState(false)
 
+  // Seed demo data on first load (only once)
   useEffect(() => {
     if (!seeded) {
       fetch('/api/seed', { method: 'POST' })
@@ -2821,6 +2832,25 @@ export default function HomePage() {
         .catch(() => setSeeded(true))
     }
   }, [seeded])
+
+  // Auto-redirect: if user is authenticated and on landing page, go to dashboard
+  useEffect(() => {
+    if (status === 'authenticated' && currentView === 'landing') {
+      setCurrentView('psicologo')
+    }
+  }, [status, currentView, setCurrentView])
+
+  // Show loading while checking session
+  if (status === 'loading' && currentView === 'landing') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <AnimatePresence mode="wait">
