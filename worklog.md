@@ -74,3 +74,24 @@ Stage Summary:
 - Configuration page saves settings to database
 - Reset endpoint clears all data for fresh start
 - Seed endpoint allows re-seeding after reset
+
+---
+Task ID: 10
+Agent: Main Agent
+Task: Fix ASR endpoint and restart application
+
+Work Log:
+- Investigated broken ASR route - was using chat.completions with image_url (wrong API)
+- Rewrote /api/asr/route.ts to use zai.audio.asr.create with file_base64 (correct API)
+- Reinstalled dependencies (bun install)
+- Regenerated Prisma client and synced database
+- Restarted Next.js dev server on port 3000
+- Verified all API endpoints return 200 with correct data
+- Verified full build compiles without errors
+- Database has: 6 pacientes, 17 turnos, 4 informes, 8 pagos
+
+Stage Summary:
+- ASR endpoint fixed to use correct z-ai-web-dev-sdk audio.asr.create API
+- Application running and accessible at http://localhost:3000
+- All APIs functional, build passes cleanly
+- Voice dictation now works in two modes: native Web Speech API (Chrome/Edge) and recorder+ASR fallback (other browsers)
