@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 
 export async function POST() {
   try {
@@ -9,6 +10,21 @@ export async function POST() {
     await db.turno.deleteMany()
     await db.paciente.deleteMany()
     await db.configuracion.deleteMany()
+
+    // Seed admin user
+    const existingAdmin = await db.usuario.findUnique({ where: { email: 'silvia@espaciosinter.com.ar' } })
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('Espacios2026!', 12)
+      await db.usuario.create({
+        data: {
+          email: 'silvia@espaciosinter.com.ar',
+          nombre: 'Lic. Silvia Hara',
+          password: hashedPassword,
+          rol: 'admin',
+          activo: true,
+        },
+      })
+    }
 
     const existingPacientes = 0
 
@@ -269,6 +285,7 @@ export async function POST() {
     })
   } catch (error) {
     console.error('Error seeding database:', error)
-    return NextResponse.json({ error: 'Error al poblar la base de datos' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Error al poblar la base de datos'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

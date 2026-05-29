@@ -95,3 +95,57 @@ Stage Summary:
 - Application running and accessible at http://localhost:3000
 - All APIs functional, build passes cleanly
 - Voice dictation now works in two modes: native Web Speech API (Chrome/Edge) and recorder+ASR fallback (other browsers)
+
+---
+Task ID: 1-4
+Agent: Main Agent
+Task: Add authentication system and prepare for Vercel deployment
+
+Work Log:
+- Updated Prisma Usuario model to add `activo` boolean field and changed rol comment to "admin"/"psicologo"
+- Ran prisma db push to sync schema changes
+- Installed bcryptjs and @types/bcryptjs for password hashing
+- Created NextAuth.js v4 configuration at /api/auth/[...nextauth]/route.ts with:
+  - Credentials provider (email + password)
+  - bcryptjs password verification
+  - JWT session strategy with 24h expiry
+  - Session callbacks to include user id and role
+  - Custom signIn page at /login
+- Updated /api/seed/route.ts to create admin user on seed:
+  - Email: silvia@espaciosinter.com.ar
+  - Password: Espacios2026! (bcrypt hashed)
+  - Nombre: Lic. Silvia Hara
+  - Rol: admin
+- Created beautiful login page at /login/page.tsx with:
+  - Teal/turquoise color scheme matching the app
+  - Brain icon branding, Espacios Inter name
+  - Email and password fields with icons
+  - Show/hide password toggle
+  - Error messages for invalid credentials
+  - Loading spinner during login
+  - "Volver al inicio" link
+- Created AuthProvider component at /components/auth-provider.tsx wrapping SessionProvider
+- Updated layout.tsx to wrap children with AuthProvider
+- Protected PsychologistDashboard:
+  - Added useSession check - shows "Acceso Restringido" card if not authenticated
+  - Shows loading spinner while session is being verified
+  - "Iniciar Sesión" button redirects to /login
+  - "Volver al Inicio" button returns to landing
+- Added "Cerrar Sesión" (logout) button in sidebar using signOut from next-auth
+- Changed "Acceso Psicólogo" button on landing page to redirect to /login instead of switching view
+- Added Lock and Loader2 icons to lucide imports
+- Added NEXTAUTH_SECRET and NEXTAUTH_URL to .env
+- Created .env.example with all required environment variables
+- Created DEPLOY.md at /download/DEPLOY.md with complete Vercel deployment guide (in Spanish)
+- Added PostgreSQL migration comments to Prisma schema
+- Cleared .next cache to resolve Turbopack Prisma client caching issue
+- Verified: lint passes, build succeeds, seed works, login page loads, auth endpoint responds
+
+Stage Summary:
+- Full NextAuth.js authentication system with credentials provider
+- Login page at /login with professional teal-themed UI
+- Psychologist dashboard is now auth-protected
+- Logout button in sidebar
+- Admin user seeded: silvia@espaciosinter.com.ar / Espacios2026!
+- Vercel deployment guide created
+- All existing functionality preserved

@@ -10,12 +10,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Para desarrollo local (SQLite):
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
+//
+// Para producción en Vercel (PostgreSQL):
+// 1. Cambiar el provider a "postgresql"
+// 2. Establecer DATABASE_URL con la conexión de PostgreSQL
+// 3. Usar `prisma migrate deploy` en lugar de `prisma db push`
+//
+// Ejemplo de DATABASE_URL para PostgreSQL:
+// DATABASE_URL="postgresql://user:password@host:5432/dbname?schema=public"
+
 model Usuario {
   id        String   @id @default(cuid())
   email     String   @unique
   nombre    String
   password  String
-  rol       String   @default("psicologo") // "psicologo" o "paciente"
+  rol       String   @default("psicologo") // "admin" o "psicologo"
+  activo    Boolean  @default(true)
   telefono  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

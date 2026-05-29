@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useSession, signOut } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, startOfWeek, endOfWeek, isSameDay } from 'date-fns'
@@ -15,7 +16,7 @@ import {
   Download, Printer, ChevronDown, Activity, BarChart3, PieChart as PieChartIcon,
   Bell, BellRing, Stethoscope, Microscope, ClipboardList, UserCheck,
   Briefcase, GraduationCap, Award, BookOpen, Sparkles, Waves, Leaf,
-  CalendarPlus
+  CalendarPlus, Loader2, Lock
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
@@ -465,7 +466,7 @@ function LandingPage() {
                 <span className="hidden sm:inline">Portal Paciente</span>
                 <span className="sm:hidden">Paciente</span>
               </Button>
-              <Button size="sm" onClick={() => setCurrentView('psicologo')} className="bg-teal-600 hover:bg-teal-700">
+              <Button size="sm" onClick={() => window.location.href = '/login'} className="bg-teal-600 hover:bg-teal-700">
                 <Stethoscope className="h-4 w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Acceso Psicólogo</span>
                 <span className="sm:hidden">Psicólogo</span>
@@ -863,12 +864,19 @@ function DashboardSidebar() {
             </button>
           ))}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t">
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t space-y-1">
           <button
-            onClick={() => setCurrentView('landing')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut className="h-5 w-5" />
+            Cerrar Sesión
+          </button>
+          <button
+            onClick={() => setCurrentView('landing')}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
             Volver al Inicio
           </button>
         </div>
@@ -2231,7 +2239,54 @@ function DashboardConfig() {
 }
 
 function PsychologistDashboard() {
-  const { dashSection } = useAppStore()
+  const { data: session, status } = useSession()
+  const { dashSection, setCurrentView } = useAppStore()
+
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <p className="text-muted-foreground">Verificando sesión...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Card className="w-full max-w-md mx-4 border-teal-100">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="h-14 w-14 rounded-full bg-teal-100 flex items-center justify-center">
+                <Lock className="h-7 w-7 text-teal-600" />
+              </div>
+            </div>
+            <CardTitle className="text-xl text-teal-800">Acceso Restringido</CardTitle>
+            <CardDescription>
+              Necesitás iniciar sesión para acceder al panel del psicólogo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Button
+              className="w-full bg-teal-600 hover:bg-teal-700"
+              onClick={() => window.location.href = '/login'}
+            >
+              Iniciar Sesión
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setCurrentView('landing')}
+            >
+              Volver al Inicio
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
