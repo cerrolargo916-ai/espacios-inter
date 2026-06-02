@@ -604,7 +604,7 @@ function LandingPage() {
         </section>
 
         {/* Services */}
-        <section className="py-16 sm:py-20 bg-teal-50/30">
+        <section className="py-16 sm:py-20 bg-muted">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <Badge variant="outline" className="mb-4 text-teal-700 border-teal-300">
@@ -711,7 +711,7 @@ function LandingPage() {
         </section>
 
         {/* Contact */}
-        <section id="contacto" className="py-16 sm:py-20 bg-teal-50/50">
+        <section id="contacto" className="py-16 sm:py-20 bg-muted">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12">
               <div>
