@@ -2448,7 +2448,6 @@ function PatientPortal() {
   const [pagos, setPagos] = useState<Pago[]>([])
   const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null)
   const { toast } = useToast()
-  const { c } = useSiteConfig()
 
   useEffect(() => {
     apiFetch<Paciente[]>('/api/pacientes').then(p => {
@@ -2494,7 +2493,7 @@ function PatientPortal() {
             <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-teal-800">{c('nombre_clinica')}</span>
+            <span className="font-bold text-teal-800">Espacios Inter</span>
           </div>
           <Select value={selectedPaciente?.id || ''} onValueChange={v => {
             const p = pacientes.find(p => p.id === v)
@@ -2644,14 +2643,14 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
               <div className="flex items-center gap-3 mb-3">
                 <Brain className="h-8 w-8 text-teal-600" />
                 <div>
-                  <p className="font-semibold text-teal-800">{c('nombre_psicologa')}</p>
-                  <p className="text-sm text-teal-600">{c('titulo_psicologa')}</p>
+                  <p className="font-semibold text-teal-800">Lic. Silvia Hara</p>
+                  <p className="text-sm text-teal-600">Psicóloga Clínica</p>
                 </div>
               </div>
               <Separator className="my-3" />
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>{c('horarios_clinica')}</span></div>
-                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>{c('direccion_clinica')}</span></div>
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>Lunes a Viernes: 9:00 - 20:00 | Sábados: 9:00 - 13:00</span></div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>Consultorio Presencial y Online</span></div>
               </div>
             </CardContent>
           </Card>
@@ -2942,15 +2941,20 @@ export default function HomePage() {
     }
   }, [seeded])
 
-  // Auto-redirect: if user is authenticated and on landing page, go to dashboard
+  // Auto-redirect: only on initial page load, if authenticated, go to dashboard
+  // (but NOT if user explicitly navigated to landing or paciente)
+  const [initialRedirectDone, setInitialRedirectDone] = useState(false)
   useEffect(() => {
-    if (status === 'authenticated' && currentView === 'landing') {
+    if (status === 'authenticated' && currentView === 'landing' && !initialRedirectDone) {
+      setInitialRedirectDone(true)
       setCurrentView('psicologo')
+    } else if (status !== 'loading' && !initialRedirectDone) {
+      setInitialRedirectDone(true)
     }
-  }, [status, currentView, setCurrentView])
+  }, [status, currentView, setCurrentView, initialRedirectDone])
 
-  // Show loading while checking session
-  if (status === 'loading' && currentView === 'landing') {
+  // Show loading while checking session (only on initial load)
+  if (status === 'loading' && !initialRedirectDone) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
