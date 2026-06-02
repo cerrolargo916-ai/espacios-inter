@@ -621,25 +621,21 @@ function LandingPage() {
                   icon: <Heart className="h-8 w-8" />,
                   title: c('servicio_individual_nombre'),
                   desc: c('servicio_individual_desc'),
-                  price: c('servicio_individual_precio'),
                 },
                 {
                   icon: <Users className="h-8 w-8" />,
                   title: c('servicio_pareja_nombre'),
                   desc: c('servicio_pareja_desc'),
-                  price: c('servicio_pareja_precio'),
                 },
                 {
                   icon: <Shield className="h-8 w-8" />,
                   title: c('servicio_familiar_nombre'),
                   desc: c('servicio_familiar_desc'),
-                  price: c('servicio_familiar_precio'),
                 },
                 {
                   icon: <Monitor className="h-8 w-8" />,
                   title: c('servicio_online_nombre'),
                   desc: c('servicio_online_desc'),
-                  price: c('servicio_online_precio'),
                 },
               ].map((service, i) => (
                 <Card key={i} className="group hover:shadow-lg transition-all duration-300 border-teal-100 hover:border-teal-300">
@@ -650,9 +646,8 @@ function LandingPage() {
                     <CardTitle className="text-lg">{service.title}</CardTitle>
                     <CardDescription>{service.desc}</CardDescription>
                   </CardHeader>
-                  <CardFooter className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-teal-700">{service.price}</span>
-                    <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => setCurrentView('paciente')}>
+                  <CardFooter>
+                    <Button size="sm" className="w-full bg-teal-600 hover:bg-teal-700" onClick={() => setCurrentView('paciente')}>
                       Reservar
                     </Button>
                   </CardFooter>
@@ -662,101 +657,55 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section className="py-16 sm:py-20 bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4 text-teal-700 border-teal-300">
-                <MessageCircle className="h-3 w-3 mr-1" /> Testimonios
-              </Badge>
-              <h3 className="text-3xl font-bold mb-3">Lo que dicen mis pacientes</h3>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6">
-              {[
-                {
-                  name: 'María G.',
-                  text: 'La Lic. Hara me ayudó a comprender mi ansiedad y darme herramientas reales para manejarla. Me siento mucho mejor.',
-                  stars: 5,
-                },
-                {
-                  name: 'Carlos R.',
-                  text: 'Las sesiones de pareja fueron transformadoras. Aprendimos a comunicarnos de una manera que nunca antes habíamos podido.',
-                  stars: 5,
-                },
-                {
-                  name: 'Luciana M.',
-                  text: 'Las sesiones online son súper cómodas y la misma calidad que presenciales. Recomiendo totalmente Espacios Inter.',
-                  stars: 5,
-                },
-              ].map((t, i) => (
-                <Card key={i} className="border-teal-100">
-                  <CardContent className="pt-6">
-                    <div className="flex mb-3">
-                      {Array.from({ length: t.stars }).map((_, j) => (
-                        <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <p className="text-muted-foreground mb-4 italic">&ldquo;{t.text}&rdquo;</p>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8 bg-teal-100">
-                        <AvatarFallback className="text-teal-700 text-xs">{t.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium text-sm">{t.name}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         {/* Contact */}
-        <section id="contacto" className="py-16 sm:py-20 bg-muted">
+        <section id="contacto" className="py-16 sm:py-20 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12">
               <div>
                 <Badge variant="outline" className="mb-4 text-teal-700 border-teal-300">
                   <Phone className="h-3 w-3 mr-1" /> Contacto
                 </Badge>
-                <h3 className="text-3xl font-bold mb-6">Contáctame</h3>
-                <p className="text-muted-foreground mb-8">
+                <h3 className="text-3xl font-bold text-foreground mb-6">Contáctame</h3>
+                <p className="text-teal-700 mb-8">
                   Estoy disponible para responder tus consultas y coordinar tu primera sesión.
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                    <div className="h-12 w-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700">
                       <Phone className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-medium">Teléfono</p>
-                      <p className="text-muted-foreground">{c('telefono_clinica')}</p>
+                      <p className="font-semibold text-foreground">Teléfono</p>
+                      <p className="text-teal-700">{c('telefono_clinica')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                    <div className="h-12 w-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700">
                       <Mail className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-medium">Email</p>
-                      <p className="text-muted-foreground">{c('email_clinica')}</p>
+                      <p className="font-semibold text-foreground">Email</p>
+                      <p className="text-teal-700">{c('email_clinica')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                    <div className="h-12 w-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700">
                       <MapPin className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-medium">Dirección</p>
-                      <p className="text-muted-foreground">{c('direccion_clinica')}</p>
+                      <p className="font-semibold text-foreground">Dirección</p>
+                      <p className="text-teal-700">{c('direccion_clinica')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+                    <div className="h-12 w-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700">
                       <Clock className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-medium">Horarios</p>
-                      <p className="text-muted-foreground">{c('horarios_clinica')}</p>
+                      <p className="font-semibold text-foreground">Horarios</p>
+                      <p className="text-teal-700">{c('horarios_clinica')}</p>
                     </div>
                   </div>
                 </div>
