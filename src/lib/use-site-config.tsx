@@ -1,73 +1,27 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
+import { useSiteConfigStore } from './site-config-store'
+import { CONFIG_DEFAULTS } from './config-defaults'
 
-// Default values matching current hardcoded content
-const DEFAULTS: Record<string, string> = {
-  nombre_clinica: 'Espacios Inter',
-  slogan: 'Espacio para tu bienestar',
-  nombre_psicologa: 'Lic. Silvia Hara',
-  titulo_psicologa: 'Psicóloga Clínica - MN 12345',
-  enfoque_terapeutico: 'Enfoque integrador humanista-cognitivo',
-  hero_descripcion: 'Un lugar seguro donde encontrar apoyo profesional para transitar tus procesos emocionales. Lic. Silvia Hara te acompaña con calidez y profesionalismo.',
-  descripcion_psicologa: 'Psicóloga egresada de la Universidad de Buenos Aires con más de 15 años de experiencia en clínica psicológica. Especializada en terapia cognitivo-conductual y enfoque integrador humanista.',
-  compromiso_psicologa: 'Mi compromiso es ofrecer un espacio seguro y confidencial donde cada persona pueda explorar sus emociones, desarrollar herramientas de afrontamiento y alcanzar un mayor bienestar emocional.',
-  formacion_1_titulo: 'Especialización en Terapia Cognitivo-Conductual',
-  formacion_1_detalle: 'Instituto de Terapia Cognitiva - 2015',
-  formacion_2_titulo: 'Posgrado en Psicoterapia Integradora',
-  formacion_2_detalle: 'UBA - 2012',
-  formacion_3_titulo: 'Licenciatura en Psicología',
-  formacion_3_detalle: 'Universidad de Buenos Aires - 2008',
-  stat_pacientes: '500+',
-  stat_experiencia: '15+',
-  stat_valoracion: '4.9',
-  stat_online: '100%',
-  servicio_individual_nombre: 'Terapia Individual',
-  servicio_individual_desc: 'Espacio personal para trabajar ansiedad, depresión, estrés, autoestima y procesos de cambio.',
-  servicio_individual_precio: '$15.000',
-  servicio_pareja_nombre: 'Terapia de Pareja',
-  servicio_pareja_desc: 'Mejora la comunicación, resolución de conflictos y reconexión emocional con tu pareja.',
-  servicio_pareja_precio: '$20.000',
-  servicio_familiar_nombre: 'Terapia Familiar',
-  servicio_familiar_desc: 'Aborda dinámicas familiares, límites saludables y fortalecimiento de vínculos.',
-  servicio_familiar_precio: '$22.000',
-  servicio_online_nombre: 'Sesiones Online',
-  servicio_online_desc: 'Terapia desde la comodidad de tu hogar con la misma calidad y confidencialidad.',
-  servicio_online_precio: '$12.000',
-  telefono_clinica: '11-5555-1234',
-  email_clinica: 'contacto@espaciosinter.com.ar',
-  direccion_clinica: 'Av. Las Heras 2456, Piso 3, Dpto B, CABA',
-  horarios_clinica: 'Lunes a Viernes: 9:00 - 20:00 | Sábados: 9:00 - 13:00',
-  servicios_subtitulo: 'Ofrezco diferentes modalidades de terapia adaptadas a tus necesidades',
-  precio_sesion_presencial: '15000',
-  precio_sesion_online: '12000',
-  duracion_sesion: '60',
-}
+export { CONFIG_DEFAULTS }
 
-export { DEFAULTS as CONFIG_DEFAULTS }
-
+/**
+ * Hook that provides site configuration from the global Zustand store.
+ * All components using this hook share the same state, so when
+ * DashboardConfig saves changes, all other components see the update.
+ */
 export function useSiteConfig() {
-  const [config, setConfig] = useState<Record<string, string>>(DEFAULTS)
-  const [loaded, setLoaded] = useState(false)
+  const config = useSiteConfigStore(s => s.config)
+  const loaded = useSiteConfigStore(s => s.loaded)
+  const loadConfig = useSiteConfigStore(s => s.loadConfig)
+  const c = useSiteConfigStore(s => s.c)
 
-  const reload = useCallback(() => {
-    setLoaded(false)
-    fetch('/api/config', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        // Merge: saved config overrides defaults
-        setConfig({ ...DEFAULTS, ...data })
-        setLoaded(true)
-      })
-      .catch(() => {
-        setConfig(DEFAULTS)
-        setLoaded(true)
-      })
-  }, [])
+  // Load config on first use
+  useEffect(() => {
+    if (!loaded) {
+      loadConfig()
+    }
+  }, [loaded, loadConfig])
 
-  useEffect(() => { reload() }, [reload])
-
-  // Helper to get a config value with fallback
-  const c = (key: string): string => config[key] || DEFAULTS[key] || ''
-
-  return { config, c, loaded, reload }
+  return { config, c, loaded, reload: loadConfig }
 }

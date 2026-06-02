@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { useSiteConfig, CONFIG_DEFAULTS } from '@/lib/use-site-config'
+import { useSiteConfigStore } from '@/lib/site-config-store'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, startOfWeek, endOfWeek, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -2073,41 +2074,47 @@ function DashboardPagos() {
 }
 
 function DashboardConfig() {
-  const [config, setConfig] = useState<Record<string, string>>({})
+  const siteConfig = useSiteConfigStore(s => s.config)
+  const setSiteConfig = useSiteConfigStore(s => s.setConfig)
+  const loadSiteConfig = useSiteConfigStore(s => s.loadConfig)
+  const [localConfig, setLocalConfig] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [resetting, setResetting] = useState(false)
   const { toast } = useToast()
 
-  const loadConfig = useCallback(() => {
-    setLoading(true)
-    fetch('/api/config', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => { setConfig({ ...CONFIG_DEFAULTS, ...data }); setLoading(false) })
-      .catch(() => { setConfig({ ...CONFIG_DEFAULTS }); setLoading(false) })
-  }, [])
+  // Initialize local config from global store
+  useEffect(() => {
+    if (Object.keys(localConfig).length === 0 || Object.keys(siteConfig).length > 0) {
+      setLocalConfig({ ...CONFIG_DEFAULTS, ...siteConfig })
+      setLoading(false)
+    }
+  }, [siteConfig])
 
-  useEffect(() => { loadConfig() }, [loadConfig])
+  // Load config on mount
+  useEffect(() => {
+    loadSiteConfig().then(() => setLoading(false))
+  }, [loadSiteConfig])
 
   const D = CONFIG_DEFAULTS
 
   const updateField = (key: string, value: string) => {
-    setConfig(prev => ({ ...prev, [key]: value }))
+    setLocalConfig(prev => ({ ...prev, [key]: value }))
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
       // Save ALL fields (defaults + any overrides) to ensure complete persistence
-      const fullConfig = { ...CONFIG_DEFAULTS, ...config }
+      const fullConfig = { ...CONFIG_DEFAULTS, ...localConfig }
       await apiFetch('/api/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullConfig),
       })
+      // Update the global store so ALL components see the changes immediately
+      setSiteConfig(fullConfig)
       toast({ title: 'Configuración guardada', description: 'Los cambios se guardaron exitosamente y se reflejarán en la página principal.' })
-      // Reload to confirm saved state
-      loadConfig()
     } catch (err) {
       toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
     } finally {
@@ -2120,7 +2127,7 @@ function DashboardConfig() {
     try {
       await apiFetch<{ message: string }>('/api/reset', { method: 'POST' })
       toast({ title: 'Datos eliminados', description: 'Todos los datos fueron borrados. Podés cargar datos nuevos o usar los de ejemplo.' })
-      loadConfig()
+      loadSiteConfig().then(() => setLocalConfig({ ...CONFIG_DEFAULTS }))
     } catch (err) {
       toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
     } finally {
@@ -2133,7 +2140,7 @@ function DashboardConfig() {
     try {
       const res = await apiFetch<{ message: string }>('/api/seed', { method: 'POST' })
       toast({ title: 'Datos de ejemplo cargados', description: res.message })
-      loadConfig()
+      loadSiteConfig().then(() => setLocalConfig({ ...CONFIG_DEFAULTS }))
     } catch (err) {
       toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
     } finally {
@@ -2266,7 +2273,7 @@ function DashboardConfig() {
                       <div className="sm:col-span-2">
                         {field.type === 'textarea' ? (
                           <Textarea
-                            value={config[field.key] ?? D[field.key] ?? ''}
+                            value={localConfig[field.key] ?? D[field.key] ?? ''}
                             placeholder={D[field.key] || ''}
                             disabled={loading}
                             rows={3}
@@ -2274,7 +2281,7 @@ function DashboardConfig() {
                           />
                         ) : (
                           <Input
-                            value={config[field.key] ?? D[field.key] ?? ''}
+                            value={localConfig[field.key] ?? D[field.key] ?? ''}
                             placeholder={D[field.key] || ''}
                             disabled={loading}
                             onChange={e => updateField(field.key, e.target.value)}
