@@ -2558,6 +2558,7 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
   const [form, setForm] = useState({ fecha: '', hora: '09:00', modalidad: 'presencial' })
   const [submitting, setSubmitting] = useState(false)
   const { toast } = useToast()
+  const { c } = useSiteConfig()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -2570,10 +2571,10 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
         body: JSON.stringify({
           pacienteId: paciente.id,
           fecha: `${form.fecha}T${form.hora}:00`,
-          duracion: 60,
+          duracion: parseInt(c('duracion_sesion')) || 60,
           modalidad: form.modalidad,
           estado: 'pendiente',
-          precio: form.modalidad === 'online' ? 12000 : 15000,
+          precio: form.modalidad === 'online' ? parseInt(c('precio_sesion_online')) || 12000 : parseInt(c('precio_sesion_presencial')) || 15000,
         }),
       })
       toast({ title: 'Turno reservado', description: 'Te contactaremos para confirmar la disponibilidad.' })
@@ -2628,7 +2629,7 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
                   >
                     <MapPin className="h-6 w-6 mx-auto mb-1" />
                     <p className="font-medium text-sm">Presencial</p>
-                    <p className="text-xs text-muted-foreground">$15.000</p>
+                    <p className="text-xs text-muted-foreground">En consultorio</p>
                   </button>
                   <button
                     type="button"
@@ -2639,7 +2640,7 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
                   >
                     <Monitor className="h-6 w-6 mx-auto mb-1" />
                     <p className="font-medium text-sm">Online</p>
-                    <p className="text-xs text-muted-foreground">$12.000</p>
+                    <p className="text-xs text-muted-foreground">Por videollamada</p>
                   </button>
                 </div>
               </div>
@@ -2656,14 +2657,14 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
               <div className="flex items-center gap-3 mb-3">
                 <Brain className="h-8 w-8 text-teal-600" />
                 <div>
-                  <p className="font-semibold text-teal-800">Lic. Silvia Hara</p>
-                  <p className="text-sm text-teal-600">Psicóloga Clínica</p>
+                  <p className="font-semibold text-teal-800">{c('nombre_psicologa')}</p>
+                  <p className="text-sm text-teal-600">{c('titulo_psicologa')}</p>
                 </div>
               </div>
               <Separator className="my-3" />
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>Lunes a Viernes: 9:00 - 20:00 | Sábados: 9:00 - 13:00</span></div>
-                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>Consultorio Presencial y Online</span></div>
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>{c('horarios_clinica')}</span></div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>{c('direccion_clinica')}</span></div>
               </div>
             </CardContent>
           </Card>
