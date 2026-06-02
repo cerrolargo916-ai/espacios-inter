@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
+import { useSiteConfig, CONFIG_DEFAULTS } from '@/lib/use-site-config'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, startOfWeek, endOfWeek, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -435,6 +436,7 @@ function formatRelativeDate(dateStr: string) {
 function LandingPage() {
   const { setCurrentView } = useAppStore()
   const { data: session } = useSession()
+  const { c } = useSiteConfig()
   const [contactForm, setContactForm] = useState({ nombre: '', email: '', telefono: '', mensaje: '' })
   const [contactSent, setContactSent] = useState(false)
   const { toast } = useToast()
@@ -465,8 +467,8 @@ function LandingPage() {
                 <Brain className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-teal-800">Espacios Inter</h1>
-                <p className="text-xs text-muted-foreground">Espacio para tu bienestar</p>
+                <h1 className="text-lg font-bold text-teal-800">{c('nombre_clinica')}</h1>
+                <p className="text-xs text-muted-foreground">{c('slogan')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
@@ -500,13 +502,13 @@ function LandingPage() {
                   <Sparkles className="h-3 w-3 mr-1" /> Consultorio de Psicología
                 </Badge>
                 <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-                  Espacios<br />
-                  <span className="text-teal-200">Inter</span>
+                  {c('nombre_clinica').split(' ').map((word: string, i: number) => (
+                    <React.Fragment key={i}>{i > 0 && <br />}{i === c('nombre_clinica').split(' ').length - 1 ? <span className="text-teal-200">{word}</span> : word}</React.Fragment>
+                  ))}
                 </h2>
-                <p className="text-xl sm:text-2xl text-teal-100 mb-2 font-light">Espacio para tu bienestar</p>
+                <p className="text-xl sm:text-2xl text-teal-100 mb-2 font-light">{c('slogan')}</p>
                 <p className="text-teal-200/80 mb-8 max-w-lg leading-relaxed">
-                  Un lugar seguro donde encontrar apoyo profesional para transitar tus procesos emocionales.
-                  Lic. Silvia Hara te acompaña con calidez y profesionalismo.
+                  {c('hero_descripcion')}
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button size="lg" className="bg-white text-teal-700 hover:bg-teal-50 font-semibold" onClick={() => setCurrentView('paciente')}>
@@ -527,19 +529,19 @@ function LandingPage() {
                         <Heart className="h-8 w-8 text-teal-200" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-semibold">Lic. Silvia Hara</h3>
-                        <p className="text-teal-200">Psicóloga Clínica - MN 12345</p>
+                        <h3 className="text-xl font-semibold">{c('nombre_psicologa')}</h3>
+                        <p className="text-teal-200">{c('titulo_psicologa')}</p>
                       </div>
                     </div>
                     <div className="space-y-3 text-teal-100">
-                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>Terapia Individual</span></div>
-                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>Terapia de Pareja</span></div>
-                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>Terapia Familiar</span></div>
-                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>Sesiones Online</span></div>
+                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>{c('servicio_individual_nombre')}</span></div>
+                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>{c('servicio_pareja_nombre')}</span></div>
+                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>{c('servicio_familiar_nombre')}</span></div>
+                      <div className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-teal-300" /><span>{c('servicio_online_nombre')}</span></div>
                     </div>
                     <div className="mt-6 pt-4 border-t border-white/20 flex items-center gap-2 text-sm text-teal-200">
                       <Leaf className="h-4 w-4" />
-                      <span>Enfoque integrador humanista-cognitivo</span>
+                      <span>{c('enfoque_terapeutico')}</span>
                     </div>
                   </div>
                 </div>
@@ -557,45 +559,35 @@ function LandingPage() {
                 <Badge variant="outline" className="mb-4 text-teal-700 border-teal-300">
                   <GraduationCap className="h-3 w-3 mr-1" /> Sobre la Profesional
                 </Badge>
-                <h3 className="text-3xl font-bold text-foreground mb-6">Lic. Silvia Hara</h3>
+                <h3 className="text-3xl font-bold text-foreground mb-6">{c('nombre_psicologa')}</h3>
                 <p className="text-muted-foreground mb-4 leading-relaxed">
-                  Psicóloga egresada de la Universidad de Buenos Aires con más de 15 años de experiencia en clínica psicológica.
-                  Especializada en terapia cognitivo-conductual y enfoque integrador humanista.
+                  {c('descripcion_psicologa')}
                 </p>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  Mi compromiso es ofrecer un espacio seguro y confidencial donde cada persona pueda explorar sus emociones,
-                  desarrollar herramientas de afrontamiento y alcanzar un mayor bienestar emocional.
+                  {c('compromiso_psicologa')}
                 </p>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Award className="h-5 w-5 text-teal-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="font-medium">Especialización en Terapia Cognitivo-Conductual</p>
-                      <p className="text-sm text-muted-foreground">Instituto de Terapia Cognitiva - 2015</p>
+                  {[
+                    { titulo: c('formacion_1_titulo'), detalle: c('formacion_1_detalle') },
+                    { titulo: c('formacion_2_titulo'), detalle: c('formacion_2_detalle') },
+                    { titulo: c('formacion_3_titulo'), detalle: c('formacion_3_detalle') },
+                  ].map((f, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <Award className="h-5 w-5 text-teal-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-medium">{f.titulo}</p>
+                        <p className="text-sm text-muted-foreground">{f.detalle}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Award className="h-5 w-5 text-teal-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="font-medium">Posgrado en Psicoterapia Integradora</p>
-                      <p className="text-sm text-muted-foreground">UBA - 2012</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Award className="h-5 w-5 text-teal-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="font-medium">Licenciatura en Psicología</p>
-                      <p className="text-sm text-muted-foreground">Universidad de Buenos Aires - 2008</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { icon: <Users className="h-8 w-8" />, number: '500+', label: 'Pacientes atendidos' },
-                  { icon: <Calendar className="h-8 w-8" />, number: '15+', label: 'Años de experiencia' },
-                  { icon: <Star className="h-8 w-8" />, number: '4.9', label: 'Valoración promedio' },
-                  { icon: <Monitor className="h-8 w-8" />, number: '100%', label: 'Disponibilidad online' },
+                  { icon: <Users className="h-8 w-8" />, number: c('stat_pacientes'), label: 'Pacientes atendidos' },
+                  { icon: <Calendar className="h-8 w-8" />, number: c('stat_experiencia'), label: 'Años de experiencia' },
+                  { icon: <Star className="h-8 w-8" />, number: c('stat_valoracion'), label: 'Valoración promedio' },
+                  { icon: <Monitor className="h-8 w-8" />, number: c('stat_online'), label: 'Disponibilidad online' },
                 ].map((stat, i) => (
                   <Card key={i} className="text-center border-teal-100">
                     <CardContent className="pt-6">
@@ -619,34 +611,34 @@ function LandingPage() {
               </Badge>
               <h3 className="text-3xl font-bold mb-3">¿Cómo puedo ayudarte?</h3>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Ofrezco diferentes modalidades de terapia adaptadas a tus necesidades
+                {c('servicios_subtitulo')}
               </p>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 {
                   icon: <Heart className="h-8 w-8" />,
-                  title: 'Terapia Individual',
-                  desc: 'Espacio personal para trabajar ansiedad, depresión, estrés, autoestima y procesos de cambio.',
-                  price: '$15.000',
+                  title: c('servicio_individual_nombre'),
+                  desc: c('servicio_individual_desc'),
+                  price: c('servicio_individual_precio'),
                 },
                 {
                   icon: <Users className="h-8 w-8" />,
-                  title: 'Terapia de Pareja',
-                  desc: 'Mejora la comunicación, resolución de conflictos y reconexión emocional con tu pareja.',
-                  price: '$20.000',
+                  title: c('servicio_pareja_nombre'),
+                  desc: c('servicio_pareja_desc'),
+                  price: c('servicio_pareja_precio'),
                 },
                 {
                   icon: <Shield className="h-8 w-8" />,
-                  title: 'Terapia Familiar',
-                  desc: 'Aborda dinámicas familiares, límites saludables y fortalecimiento de vínculos.',
-                  price: '$22.000',
+                  title: c('servicio_familiar_nombre'),
+                  desc: c('servicio_familiar_desc'),
+                  price: c('servicio_familiar_precio'),
                 },
                 {
                   icon: <Monitor className="h-8 w-8" />,
-                  title: 'Sesiones Online',
-                  desc: 'Terapia desde la comodidad de tu hogar con la misma calidad y confidencialidad.',
-                  price: '$12.000',
+                  title: c('servicio_online_nombre'),
+                  desc: c('servicio_online_desc'),
+                  price: c('servicio_online_precio'),
                 },
               ].map((service, i) => (
                 <Card key={i} className="group hover:shadow-lg transition-all duration-300 border-teal-100 hover:border-teal-300">
@@ -736,7 +728,7 @@ function LandingPage() {
                     </div>
                     <div>
                       <p className="font-medium">Teléfono</p>
-                      <p className="text-muted-foreground">11-5555-1234</p>
+                      <p className="text-muted-foreground">{c('telefono_clinica')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -745,7 +737,7 @@ function LandingPage() {
                     </div>
                     <div>
                       <p className="font-medium">Email</p>
-                      <p className="text-muted-foreground">contacto@espaciosinter.com.ar</p>
+                      <p className="text-muted-foreground">{c('email_clinica')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -754,7 +746,7 @@ function LandingPage() {
                     </div>
                     <div>
                       <p className="font-medium">Dirección</p>
-                      <p className="text-muted-foreground">Av. Las Heras 2456, Piso 3, Dpto B, CABA</p>
+                      <p className="text-muted-foreground">{c('direccion_clinica')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -763,7 +755,7 @@ function LandingPage() {
                     </div>
                     <div>
                       <p className="font-medium">Horarios</p>
-                      <p className="text-muted-foreground">Lunes a Viernes: 9:00 - 20:00 | Sábados: 9:00 - 13:00</p>
+                      <p className="text-muted-foreground">{c('horarios_clinica')}</p>
                     </div>
                   </div>
                 </div>
@@ -810,11 +802,11 @@ function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Brain className="h-6 w-6 text-teal-300" />
-              <span className="font-semibold">Espacios Inter</span>
+              <span className="font-semibold">{c('nombre_clinica')}</span>
               <span className="text-teal-400">|</span>
-              <span className="text-sm text-teal-300">Espacio para tu bienestar</span>
+              <span className="text-sm text-teal-300">{c('slogan')}</span>
             </div>
-            <p className="text-sm text-teal-400">&copy; {new Date().getFullYear()} Espacios Inter - Lic. Silvia Hara</p>
+            <p className="text-sm text-teal-400">&copy; {new Date().getFullYear()} {c('nombre_clinica')} - {c('nombre_psicologa')}</p>
           </div>
         </div>
       </footer>
@@ -827,6 +819,7 @@ function LandingPage() {
 // ============================
 function DashboardSidebar() {
   const { dashSection, setDashSection, setCurrentView, sidebarOpen, setSidebarOpen } = useAppStore()
+  const { c } = useSiteConfig()
 
   const menuItems = [
     { id: 'inicio' as const, icon: <Home className="h-5 w-5" />, label: 'Panel de Inicio' },
@@ -850,8 +843,8 @@ function DashboardSidebar() {
             <Brain className="h-6 w-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-sm text-teal-800 truncate">Espacios Inter</h2>
-            <p className="text-xs text-muted-foreground">Lic. Silvia Hara</p>
+            <h2 className="font-bold text-sm text-teal-800 truncate">{c('nombre_clinica')}</h2>
+            <p className="text-xs text-muted-foreground">{c('nombre_psicologa')}</p>
           </div>
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
@@ -898,6 +891,7 @@ function DashboardInicio() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const { setDashSection } = useAppStore()
+  const { c } = useSiteConfig()
 
   useEffect(() => {
     apiFetch<Stats>('/api/stats')
@@ -939,7 +933,7 @@ function DashboardInicio() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Panel de Inicio</h2>
-        <p className="text-muted-foreground">Bienvenida, Lic. Silvia Hara</p>
+        <p className="text-muted-foreground">Bienvenida, {c('nombre_psicologa')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2095,16 +2089,11 @@ function DashboardConfig() {
 
   useEffect(() => { loadConfig() }, [loadConfig])
 
-  const configFields = [
-    { key: 'nombre_clinica', label: 'Nombre del Consultorio', placeholder: 'Espacios Inter' },
-    { key: 'nombre_psicologa', label: 'Nombre de la Psicóloga', placeholder: 'Lic. Silvia Hara' },
-    { key: 'telefono_clinica', label: 'Teléfono', placeholder: '11-5555-1234' },
-    { key: 'email_clinica', label: 'Email', placeholder: 'contacto@espaciosinter.com.ar' },
-    { key: 'direccion_clinica', label: 'Dirección', placeholder: 'Av. Las Heras 2456, CABA' },
-    { key: 'precio_sesion_presencial', label: 'Precio Sesión Presencial ($)', placeholder: '15000' },
-    { key: 'precio_sesion_online', label: 'Precio Sesión Online ($)', placeholder: '12000' },
-    { key: 'duracion_sesion', label: 'Duración de Sesión (minutos)', placeholder: '60' },
-  ]
+  const D = CONFIG_DEFAULTS
+
+  const updateField = (key: string, value: string) => {
+    setConfig(prev => ({ ...prev, [key]: value }))
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -2148,33 +2137,153 @@ function DashboardConfig() {
     }
   }
 
+  type ConfigField = { key: string; label: string; type?: 'input' | 'textarea' }
+  type ConfigSection = { id: string; label: string; icon: React.ReactNode; fields: ConfigField[] }
+
+  const sections: ConfigSection[] = [
+    {
+      id: 'textos',
+      label: 'Textos de la Página',
+      icon: <BookOpen className="h-4 w-4" />,
+      fields: [
+        { key: 'nombre_clinica', label: 'Nombre del Consultorio' },
+        { key: 'slogan', label: 'Slogan' },
+        { key: 'hero_descripcion', label: 'Descripción Hero (página principal)', type: 'textarea' },
+        { key: 'servicios_subtitulo', label: 'Subtítulo de Servicios', type: 'textarea' },
+      ],
+    },
+    {
+      id: 'profesional',
+      label: 'Datos de la Profesional',
+      icon: <Stethoscope className="h-4 w-4" />,
+      fields: [
+        { key: 'nombre_psicologa', label: 'Nombre' },
+        { key: 'titulo_psicologa', label: 'Título / Matrícula' },
+        { key: 'enfoque_terapeutico', label: 'Enfoque Terapéutico' },
+        { key: 'descripcion_psicologa', label: 'Descripción de la Profesional', type: 'textarea' },
+        { key: 'compromiso_psicologa', label: 'Compromiso de la Profesional', type: 'textarea' },
+      ],
+    },
+    {
+      id: 'formacion',
+      label: 'Títulos y Formación',
+      icon: <GraduationCap className="h-4 w-4" />,
+      fields: [
+        { key: 'formacion_1_titulo', label: 'Formación 1 - Título' },
+        { key: 'formacion_1_detalle', label: 'Formación 1 - Detalle' },
+        { key: 'formacion_2_titulo', label: 'Formación 2 - Título' },
+        { key: 'formacion_2_detalle', label: 'Formación 2 - Detalle' },
+        { key: 'formacion_3_titulo', label: 'Formación 3 - Título' },
+        { key: 'formacion_3_detalle', label: 'Formación 3 - Detalle' },
+      ],
+    },
+    {
+      id: 'estadisticas',
+      label: 'Estadísticas',
+      icon: <BarChart3 className="h-4 w-4" />,
+      fields: [
+        { key: 'stat_pacientes', label: 'Pacientes atendidos' },
+        { key: 'stat_experiencia', label: 'Años de experiencia' },
+        { key: 'stat_valoracion', label: 'Valoración promedio' },
+        { key: 'stat_online', label: 'Disponibilidad online' },
+      ],
+    },
+    {
+      id: 'servicios',
+      label: 'Servicios y Precios',
+      icon: <Briefcase className="h-4 w-4" />,
+      fields: [
+        { key: 'servicio_individual_nombre', label: 'Servicio Individual - Nombre' },
+        { key: 'servicio_individual_desc', label: 'Servicio Individual - Descripción', type: 'textarea' },
+        { key: 'servicio_individual_precio', label: 'Servicio Individual - Precio' },
+        { key: 'servicio_pareja_nombre', label: 'Servicio Pareja - Nombre' },
+        { key: 'servicio_pareja_desc', label: 'Servicio Pareja - Descripción', type: 'textarea' },
+        { key: 'servicio_pareja_precio', label: 'Servicio Pareja - Precio' },
+        { key: 'servicio_familiar_nombre', label: 'Servicio Familiar - Nombre' },
+        { key: 'servicio_familiar_desc', label: 'Servicio Familiar - Descripción', type: 'textarea' },
+        { key: 'servicio_familiar_precio', label: 'Servicio Familiar - Precio' },
+        { key: 'servicio_online_nombre', label: 'Servicio Online - Nombre' },
+        { key: 'servicio_online_desc', label: 'Servicio Online - Descripción', type: 'textarea' },
+        { key: 'servicio_online_precio', label: 'Servicio Online - Precio' },
+      ],
+    },
+    {
+      id: 'contacto',
+      label: 'Contacto',
+      icon: <Phone className="h-4 w-4" />,
+      fields: [
+        { key: 'telefono_clinica', label: 'Teléfono' },
+        { key: 'email_clinica', label: 'Email' },
+        { key: 'direccion_clinica', label: 'Dirección' },
+        { key: 'horarios_clinica', label: 'Horarios' },
+      ],
+    },
+    {
+      id: 'sesiones',
+      label: 'Sesiones',
+      icon: <Clock className="h-4 w-4" />,
+      fields: [
+        { key: 'precio_sesion_presencial', label: 'Precio Sesión Presencial ($)' },
+        { key: 'precio_sesion_online', label: 'Precio Sesión Online ($)' },
+        { key: 'duracion_sesion', label: 'Duración de Sesión (minutos)' },
+      ],
+    },
+  ]
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Configuración</h2>
-        <p className="text-muted-foreground">Ajustes del consultorio Espacios Inter</p>
+        <p className="text-muted-foreground">Editá todos los textos y datos que se muestran en la página principal</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Datos del Consultorio</CardTitle>
-          <CardDescription>Editá la información general. Los cambios se guardan al presionar &quot;Guardar Cambios&quot;.</CardDescription>
+          <CardTitle>Contenido de la Página</CardTitle>
+          <CardDescription>Editá la información que aparece en la landing page. Los cambios se reflejan al presionar &quot;Guardar Cambios&quot;.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {configFields.map(field => (
-            <div key={field.key} className="grid sm:grid-cols-3 gap-2 items-center">
-              <Label className="sm:text-right">{field.label}</Label>
-              <div className="sm:col-span-2">
-                <Input
-                  value={config[field.key] || ''}
-                  placeholder={field.placeholder}
-                  disabled={loading}
-                  onChange={e => setConfig(c => ({ ...c, [field.key]: e.target.value }))}
-                />
-              </div>
-            </div>
-          ))}
-          <div className="flex justify-end pt-4">
+        <CardContent>
+          <Tabs defaultValue="textos" className="w-full">
+            <TabsList className="flex flex-wrap h-auto gap-1 mb-6 bg-muted/50 p-1">
+              {sections.map(section => (
+                <TabsTrigger key={section.id} value={section.id} className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:bg-teal-600 data-[state=active]:text-white">
+                  {section.icon}
+                  <span className="hidden sm:inline">{section.label}</span>
+                  <span className="sm:hidden">{section.label.split(' ')[0]}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {sections.map(section => (
+              <TabsContent key={section.id} value={section.id}>
+                <div className="space-y-4">
+                  {section.fields.map(field => (
+                    <div key={field.key} className="grid sm:grid-cols-3 gap-2 items-start">
+                      <Label className="sm:text-right sm:pt-2">{field.label}</Label>
+                      <div className="sm:col-span-2">
+                        {field.type === 'textarea' ? (
+                          <Textarea
+                            value={config[field.key] ?? D[field.key] ?? ''}
+                            placeholder={D[field.key] || ''}
+                            disabled={loading}
+                            rows={3}
+                            onChange={e => updateField(field.key, e.target.value)}
+                          />
+                        ) : (
+                          <Input
+                            value={config[field.key] ?? D[field.key] ?? ''}
+                            placeholder={D[field.key] || ''}
+                            disabled={loading}
+                            onChange={e => updateField(field.key, e.target.value)}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+          <div className="flex justify-end pt-6 border-t mt-6">
             <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleSave} disabled={saving || loading}>
               {saving ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Guardando...</> : <><CheckCircle className="h-4 w-4 mr-2" /> Guardar Cambios</>}
             </Button>
@@ -2339,6 +2448,7 @@ function PatientPortal() {
   const [pagos, setPagos] = useState<Pago[]>([])
   const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null)
   const { toast } = useToast()
+  const { c } = useSiteConfig()
 
   useEffect(() => {
     apiFetch<Paciente[]>('/api/pacientes').then(p => {
@@ -2384,7 +2494,7 @@ function PatientPortal() {
             <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-teal-800">Espacios Inter</span>
+            <span className="font-bold text-teal-800">{c('nombre_clinica')}</span>
           </div>
           <Select value={selectedPaciente?.id || ''} onValueChange={v => {
             const p = pacientes.find(p => p.id === v)
@@ -2534,15 +2644,14 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
               <div className="flex items-center gap-3 mb-3">
                 <Brain className="h-8 w-8 text-teal-600" />
                 <div>
-                  <p className="font-semibold text-teal-800">Lic. Silvia Hara</p>
-                  <p className="text-sm text-teal-600">Psicóloga Clínica</p>
+                  <p className="font-semibold text-teal-800">{c('nombre_psicologa')}</p>
+                  <p className="text-sm text-teal-600">{c('titulo_psicologa')}</p>
                 </div>
               </div>
               <Separator className="my-3" />
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>Lunes a Viernes: 9:00 - 20:00</span></div>
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>Sábados: 9:00 - 13:00</span></div>
-                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>Av. Las Heras 2456, CABA</span></div>
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>{c('horarios_clinica')}</span></div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>{c('direccion_clinica')}</span></div>
               </div>
             </CardContent>
           </Card>
