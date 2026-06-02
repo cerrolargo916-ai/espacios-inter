@@ -2652,19 +2652,21 @@ function PatientBookTurno({ paciente, onBooked }: { paciente: Paciente | null; o
         </Card>
 
         <div className="space-y-4">
-          <Card className="border-teal-100 bg-teal-50/50">
+          <Card className="border-teal-200 bg-teal-50">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-3">
-                <Brain className="h-8 w-8 text-teal-600" />
+                <Brain className="h-8 w-8 text-teal-700" />
                 <div>
-                  <p className="font-semibold text-teal-800">{c('nombre_psicologa')}</p>
-                  <p className="text-sm text-teal-600">{c('titulo_psicologa')}</p>
+                  <p className="font-semibold text-teal-900">{c('nombre_psicologa')}</p>
+                  <p className="text-sm text-teal-700">{c('titulo_psicologa')}</p>
                 </div>
               </div>
               <Separator className="my-3" />
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-600" /><span>{c('horarios_clinica')}</span></div>
-                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-600" /><span>{c('direccion_clinica')}</span></div>
+              <div className="space-y-2 text-sm text-teal-800">
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-teal-700" /><span>{c('horarios_clinica')}</span></div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-teal-700" /><span>{c('direccion_clinica')}</span></div>
+                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-teal-700" /><span>{c('telefono_clinica')}</span></div>
+                <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-teal-700" /><span>{c('email_clinica')}</span></div>
               </div>
             </CardContent>
           </Card>
