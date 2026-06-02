@@ -4,7 +4,13 @@ import bcrypt from 'bcryptjs'
 
 export async function POST() {
   try {
-    // Allow re-seeding by clearing existing data first
+    // Only seed if database is empty (prevent wiping user data)
+    const existingPacientesCount = await db.paciente.count()
+    if (existingPacientesCount > 0) {
+      return NextResponse.json({ message: 'La base de datos ya tiene datos. Usá "Limpiar Todos los Datos" primero si querés reiniciar.' })
+    }
+
+    // Clear data only if empty (safe to run)
     await db.informeClinico.deleteMany()
     await db.pago.deleteMany()
     await db.turno.deleteMany()

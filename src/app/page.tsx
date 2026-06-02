@@ -2138,6 +2138,8 @@ function DashboardConfig() {
   const handleSeed = async () => {
     setResetting(true)
     try {
+      // Reset first, then seed (seed now only works on empty DB)
+      await apiFetch<{ message: string }>('/api/reset', { method: 'POST' })
       const res = await apiFetch<{ message: string }>('/api/seed', { method: 'POST' })
       toast({ title: 'Datos de ejemplo cargados', description: res.message })
       loadSiteConfig().then(() => setLocalConfig({ ...CONFIG_DEFAULTS }))
@@ -2941,16 +2943,6 @@ function PatientRecordatorios({ turnos }: { turnos: Turno[] }) {
 export default function HomePage() {
   const { currentView, setCurrentView } = useAppStore()
   const { data: session, status } = useSession()
-  const [seeded, setSeeded] = useState(false)
-
-  // Seed demo data on first load (only once)
-  useEffect(() => {
-    if (!seeded) {
-      fetch('/api/seed', { method: 'POST' })
-        .then(() => setSeeded(true))
-        .catch(() => setSeeded(true))
-    }
-  }, [seeded])
 
   // Auto-redirect: only on initial page load, if authenticated, go to dashboard
   // (but NOT if user explicitly navigated to landing or paciente)
