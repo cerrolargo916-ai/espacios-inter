@@ -1,6 +1,9 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     const configs = await db.configuracion.findMany()
@@ -8,7 +11,11 @@ export async function GET() {
     for (const c of configs) {
       configMap[c.clave] = c.valor
     }
-    return NextResponse.json(configMap)
+    return NextResponse.json(configMap, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    })
   } catch (error) {
     console.error('Error fetching config:', error)
     return NextResponse.json({ error: 'Error al obtener configuración' }, { status: 500 })

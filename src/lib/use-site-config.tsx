@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 // Default values matching current hardcoded content
 const DEFAULTS: Record<string, string> = {
@@ -49,19 +49,25 @@ export function useSiteConfig() {
   const [config, setConfig] = useState<Record<string, string>>(DEFAULTS)
   const [loaded, setLoaded] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/config')
+  const reload = useCallback(() => {
+    setLoaded(false)
+    fetch('/api/config', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         // Merge: saved config overrides defaults
         setConfig({ ...DEFAULTS, ...data })
         setLoaded(true)
       })
-      .catch(() => setLoaded(true))
+      .catch(() => {
+        setConfig(DEFAULTS)
+        setLoaded(true)
+      })
   }, [])
+
+  useEffect(() => { reload() }, [reload])
 
   // Helper to get a config value with fallback
   const c = (key: string): string => config[key] || DEFAULTS[key] || ''
 
-  return { config, c, loaded }
+  return { config, c, loaded, reload }
 }

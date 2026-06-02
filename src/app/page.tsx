@@ -2081,10 +2081,10 @@ function DashboardConfig() {
 
   const loadConfig = useCallback(() => {
     setLoading(true)
-    fetch('/api/config')
+    fetch('/api/config', { cache: 'no-store' })
       .then(res => res.json())
-      .then(data => { setConfig(data); setLoading(false) })
-      .catch(() => setLoading(false))
+      .then(data => { setConfig({ ...CONFIG_DEFAULTS, ...data }); setLoading(false) })
+      .catch(() => { setConfig({ ...CONFIG_DEFAULTS }); setLoading(false) })
   }, [])
 
   useEffect(() => { loadConfig() }, [loadConfig])
@@ -2098,12 +2098,16 @@ function DashboardConfig() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Save ALL fields (defaults + any overrides) to ensure complete persistence
+      const fullConfig = { ...CONFIG_DEFAULTS, ...config }
       await apiFetch('/api/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
+        body: JSON.stringify(fullConfig),
       })
-      toast({ title: 'Configuración guardada', description: 'Los cambios se guardaron exitosamente.' })
+      toast({ title: 'Configuración guardada', description: 'Los cambios se guardaron exitosamente y se reflejarán en la página principal.' })
+      // Reload to confirm saved state
+      loadConfig()
     } catch (err) {
       toast({ title: 'Error', description: (err as Error).message, variant: 'destructive' })
     } finally {
