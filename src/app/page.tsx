@@ -21,6 +21,8 @@ import {
   CalendarPlus, Loader2, Lock
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx'
+import { saveAs } from 'file-saver'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1615,6 +1617,157 @@ function DashboardInformes() {
     />
   )
 
+  const exportToWord = async (inf: InformeClinico) => {
+    try {
+      const store = await import('@/lib/site-config-store').then(m => m.useSiteConfigStore.getState())
+      const nombreClinica = store.c('nombre_clinica') || 'Espacios Inter'
+      const nombrePsicologa = store.c('nombre_psicologa') || 'Lic. Silvia Hara'
+      const tituloPsicologa = store.c('titulo_psicologa') || 'Psicóloga Clínica'
+
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+            }
+          },
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({ text: nombreClinica, bold: true, size: 32, color: '0d9488', font: 'Calibri' }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: `${nombrePsicologa} - ${tituloPsicologa}`, size: 22, color: '57534e', font: 'Calibri' }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: '─'.repeat(60), color: 'd6d3d1', font: 'Calibri' }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 300 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: `INFORME CLÍNICO - ${TIPO_INFORME_LABELS[inf.tipo] || inf.tipo}`, bold: true, size: 26, font: 'Calibri' }),
+              ],
+              heading: HeadingLevel.HEADING_1,
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Paciente: ', bold: true, size: 22, font: 'Calibri' }),
+                new TextRun({ text: `${inf.paciente?.nombre} ${inf.paciente?.apellido}`, size: 22, font: 'Calibri' }),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Fecha: ', bold: true, size: 22, font: 'Calibri' }),
+                new TextRun({ text: formatDateTime(inf.fecha), size: 22, font: 'Calibri' }),
+              ],
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Estado: ', bold: true, size: 22, font: 'Calibri' }),
+                new TextRun({ text: inf.firmado ? 'Firmado digitalmente' : 'Sin firmar', size: 22, font: 'Calibri' }),
+              ],
+              spacing: { after: 300 },
+            }),
+            ...(inf.motivoConsulta ? [
+              new Paragraph({
+                children: [new TextRun({ text: 'MOTIVO DE CONSULTA', bold: true, size: 22, color: '0d9488', font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: inf.motivoConsulta, size: 22, font: 'Calibri' })],
+                spacing: { after: 200 },
+              }),
+            ] : []),
+            ...(inf.observaciones ? [
+              new Paragraph({
+                children: [new TextRun({ text: 'OBSERVACIONES', bold: true, size: 22, color: '0d9488', font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: inf.observaciones, size: 22, font: 'Calibri' })],
+                spacing: { after: 200 },
+              }),
+            ] : []),
+            ...(inf.diagnostico ? [
+              new Paragraph({
+                children: [new TextRun({ text: 'DIAGNÓSTICO', bold: true, size: 22, color: '0d9488', font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: inf.diagnostico, size: 22, font: 'Calibri' })],
+                spacing: { after: 200 },
+              }),
+            ] : []),
+            ...(inf.planTratamiento ? [
+              new Paragraph({
+                children: [new TextRun({ text: 'PLAN DE TRATAMIENTO', bold: true, size: 22, color: '0d9488', font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: inf.planTratamiento, size: 22, font: 'Calibri' })],
+                spacing: { after: 200 },
+              }),
+            ] : []),
+            ...(inf.evolucion ? [
+              new Paragraph({
+                children: [new TextRun({ text: 'EVOLUCIÓN', bold: true, size: 22, color: '0d9488', font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: inf.evolucion, size: 22, font: 'Calibri' })],
+                spacing: { after: 200 },
+              }),
+            ] : []),
+            new Paragraph({
+              children: [
+                new TextRun({ text: '─'.repeat(60), color: 'd6d3d1', font: 'Calibri' }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 400, after: 200 },
+            }),
+            ...(inf.firmado ? [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Documento firmado digitalmente', italics: true, size: 18, color: '57534e', font: 'Calibri' }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 100 },
+              }),
+            ] : []),
+            new Paragraph({
+              children: [
+                new TextRun({ text: nombreClinica, italics: true, size: 18, color: '0d9488', font: 'Calibri' }),
+              ],
+              alignment: AlignmentType.CENTER,
+            }),
+          ],
+        }],
+      })
+
+      const blob = await Packer.toBlob(doc)
+      const nombrePaciente = `${inf.paciente?.nombre || 'paciente'}_${inf.paciente?.apellido || ''}`.replace(/\s+/g, '_')
+      const fecha = format(parseISO(inf.fecha), 'yyyy-MM-dd')
+      saveAs(blob, `Informe_${TIPO_INFORME_LABELS[inf.tipo] || inf.tipo}_${nombrePaciente}_${fecha}.docx`)
+      toast({ title: 'Word descargado', description: 'Archivo guardado correctamente' })
+    } catch (err) {
+      console.error(err)
+      toast({ title: 'Error al exportar', description: 'No se pudo generar el archivo Word', variant: 'destructive' })
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1656,28 +1809,54 @@ function DashboardInformes() {
           action={<Button onClick={openCreate} className="bg-teal-600 hover:bg-teal-700"><Plus className="h-4 w-4 mr-2" /> Crear Informe</Button>}
         />
       ) : (
-        <div className="grid gap-3">
-          {informes.map(inf => (
-            <Card key={inf.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="bg-teal-50 text-teal-700">{TIPO_INFORME_LABELS[inf.tipo] || inf.tipo}</Badge>
-                      {inf.firmado && <Badge variant="outline" className="bg-green-50 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Firmado</Badge>}
-                    </div>
-                    <p className="font-medium text-sm">{inf.paciente?.nombre} {inf.paciente?.apellido}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(inf.fecha)}</p>
-                    {inf.motivoConsulta && <p className="text-xs text-muted-foreground mt-1 truncate">Motivo: {inf.motivoConsulta}</p>}
+        <div className="space-y-6">
+          {(() => {
+            const sorted = [...informes].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+            const groups: { key: string; label: string; items: InformeClinico[] }[] = []
+            sorted.forEach(inf => {
+              const d = parseISO(inf.fecha)
+              const key = format(d, 'yyyy-MM')
+              const label = format(d, 'MMMM yyyy', { locale: es })
+              let g = groups.find(g => g.key === key)
+              if (!g) { g = { key, label: label.charAt(0).toUpperCase() + label.slice(1), items: [] }; groups.push(g) }
+              g.items.push(inf)
+            })
+            return groups.map(group => (
+              <div key={group.key}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 shrink-0">
+                    <Calendar className="h-4 w-4" />
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => setSelectedInforme(inf)} title="Ver"><Eye className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(inf)} title="Editar"><Edit className="h-4 w-4" /></Button>
-                  </div>
+                  <h3 className="font-semibold text-teal-800">{group.label}</h3>
+                  <Badge variant="outline" className="text-xs">{group.items.length} {group.items.length === 1 ? 'informe' : 'informes'}</Badge>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <div className="ml-4 border-l-2 border-teal-100 pl-4 space-y-3">
+                  {group.items.map(inf => (
+                    <Card key={inf.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="pt-4 pb-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="bg-teal-50 text-teal-700">{TIPO_INFORME_LABELS[inf.tipo] || inf.tipo}</Badge>
+                              {inf.firmado && <Badge variant="outline" className="bg-green-50 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Firmado</Badge>}
+                            </div>
+                            <p className="font-medium text-sm">{inf.paciente?.nombre} {inf.paciente?.apellido}</p>
+                            <p className="text-xs text-muted-foreground">{formatDateTime(inf.fecha)}</p>
+                            {inf.motivoConsulta && <p className="text-xs text-muted-foreground mt-1 truncate">Motivo: {inf.motivoConsulta}</p>}
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" onClick={() => exportToWord(inf)} title="Descargar Word"><Download className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => setSelectedInforme(inf)} title="Ver"><Eye className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(inf)} title="Editar"><Edit className="h-4 w-4" /></Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))
+          })()}
         </div>
       )}
 
@@ -1799,6 +1978,11 @@ function DashboardInformes() {
               {selectedInforme.evolucion && (
                 <div><h4 className="font-semibold text-sm mb-1">Evolución</h4><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedInforme.evolucion}</p></div>
               )}
+              <div className="pt-2">
+                <Button className="bg-teal-600 hover:bg-teal-700" onClick={() => exportToWord(selectedInforme)}>
+                  <Download className="h-4 w-4 mr-2" /> Descargar Word
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
