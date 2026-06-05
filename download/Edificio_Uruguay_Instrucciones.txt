@@ -1,0 +1,96 @@
+INSTRUCCIONES PARA CREAR EL BALANCE DEL EDIFICIO EN GOOGLE SHEETS
+=====================================================================
+
+1. Abrí Google Sheets (sheets.google.com) y creá una hoja nueva
+2. Creá 3 hojas (pestañas abajo a la izquierda):
+   - "Ingresos por Unidad"
+   - "Gastos del Edificio" 
+   - "Resumen Balance"
+
+3. En cada hoja, pegá los datos que van a continuación
+   (seleccioná todo el bloque, copialo, y pegalo en la celda A1)
+
+IMPORTANTE: Después de pegar, en Google Sheets:
+- Seleccioná las columnas de meses y hacé Formato > Número > Número
+- Las fórmulas del Total Anual y el Resumen las agregás después
+
+
+======================================================================
+HOJA 1 - Ingresos por Unidad
+======================================================================
+
+Unidad	Ene	Feb	Mar	Abr	May	Jun	Jul	Ago	Sep	Oct	Nov	Dic	Total Anual
+Apto 1
+Apto 2
+Apto 3
+Apto 4
+Apto 5
+Apto 6
+Apto 7
+Apto 8
+Apto 9
+Apto 10
+Apto 11
+Apto 12
+Apto 13
+Apto 14
+Apto 15
+Apto 16
+Apto 17
+Apto 18
+Apto 19
+Apto 20
+Apto 21
+Apto 22
+Apto 23
+Apto 24
+Apto 25
+Apto 26
+Apto 27
+Local 1
+Local 2
+
+FILA TOTAL: TOTAL INGRESOS — Usá =SUM() en cada columna de mes
+
+======================================================================
+HOJA 2 - Gastos del Edificio
+======================================================================
+
+Categoría	Ene	Feb	Mar	Abr	May	Jun	Jul	Ago	Sep	Oct	Nov	Dic	Total Anual
+Expensas comunes
+Impuesto Inmobiliario
+Tributo DGI
+Contribución Inmobiliaria
+Agua (OSE)
+Electricidad (UTE) - Areas comunes
+Seguro del edificio
+Mantenimiento ascensor
+Limpieza
+Seguridad / Vigilancia
+Reparaciones
+Mantenimiento general
+Honorarios administrador
+Servicio de portero
+Fondo de reserva
+Otros
+
+FILA TOTAL: TOTAL GASTOS — Usá =SUM() en cada columna de mes
+
+======================================================================
+HOJA 3 - Resumen Balance
+======================================================================
+
+En la hoja 'Resumen Balance', pegá esto empezando en A1:
+
+Concepto	Ene	Feb	Mar	Abr	May	Jun	Jul	Ago	Sep	Oct	Nov	Dic	Total Anual
+Total Ingresos	=formula*	=formula*	...
+Total Gastos	=formula*	=formula*	...
+BALANCE	=formula*	=formula*	...
+
+* FÓRMULAS para Resumen Balance:
+  - Total Ingresos (celda B2): ='Ingresos por Unidad'!C34  (arrastra a la derecha hasta la col N)
+  - Total Gastos (celda B3): ='Gastos del Edificio'!C21  (arrastra a la derecha hasta la col N)
+  - BALANCE (celda B4): =B2-B3  (arrastra a la derecha hasta la col N)
+  - Total Anual Ingresos (O2): =SUM(B2:N2)
+  - Total Anual Gastos (O3): =SUM(B3:N3)
+  - Total Anual Balance (O4): =SUM(B4:N4)
