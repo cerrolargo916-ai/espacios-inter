@@ -13,6 +13,7 @@ export async function GET() {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': 'attachment; filename="Edificio_Uruguay_Balance.xlsx"',
         'Content-Length': fileBuffer.length.toString(),
+        'Cache-Control': 'public, max-age=3600',
       },
     })
   } catch {
