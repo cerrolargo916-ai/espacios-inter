@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { useSiteConfig, CONFIG_DEFAULTS } from '@/lib/use-site-config'
 import { useSiteConfigStore } from '@/lib/site-config-store'
+import { DIAGNOSTICOS_DSM5, CATEGORIAS_DSM5, buscarDiagnosticos, type DiagnosticoDSM5 } from '@/lib/dsm5'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, parseISO, isToday, isTomorrow, isThisWeek, addDays, startOfWeek, endOfWeek, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -1526,6 +1527,10 @@ function DashboardInformes() {
   const [editInforme, setEditInforme] = useState<InformeClinico | null>(null)
   const [selectedInforme, setSelectedInforme] = useState<InformeClinico | null>(null)
   const [filterPaciente, setFilterPaciente] = useState<string>('todos')
+  const [dsm5Query, setDsm5Query] = useState('')
+  const [dsm5Results, setDsm5Results] = useState<DiagnosticoDSM5[]>([])
+  const [showDsm5Dropdown, setShowDsm5Dropdown] = useState(false)
+  const [dsm5ExpandedCat, setDsm5ExpandedCat] = useState<string | null>(null)
   const voiceDictation = useVoiceDictation()
   const { toast } = useToast()
 
@@ -1533,6 +1538,17 @@ function DashboardInformes() {
     pacienteId: '', turnoId: '', tipo: 'sesion',
     motivoConsulta: '', observaciones: '', diagnostico: '', planTratamiento: '', evolucion: '', firmado: false,
   })
+
+  // Efecto de búsqueda DSM-5
+  useEffect(() => {
+    if (dsm5Query.length >= 2) {
+      setDsm5Results(buscarDiagnosticos(dsm5Query))
+      setShowDsm5Dropdown(true)
+      setDsm5ExpandedCat(null)
+    } else {
+      setDsm5Results([])
+    }
+  }, [dsm5Query])
 
   useEffect(() => {
     let active = true
@@ -1559,6 +1575,10 @@ function DashboardInformes() {
   const openCreate = () => {
     setEditInforme(null)
     setForm({ pacienteId: '', turnoId: '', tipo: 'sesion', motivoConsulta: '', observaciones: '', diagnostico: '', planTratamiento: '', evolucion: '', firmado: false })
+    setDsm5Query('')
+    setDsm5Results([])
+    setShowDsm5Dropdown(false)
+    setDsm5ExpandedCat(null)
     setShowModal(true)
   }
 
@@ -1570,6 +1590,10 @@ function DashboardInformes() {
       diagnostico: inf.diagnostico || '', planTratamiento: inf.planTratamiento || '',
       evolucion: inf.evolucion || '', firmado: inf.firmado,
     })
+    setDsm5Query('')
+    setDsm5Results([])
+    setShowDsm5Dropdown(false)
+    setDsm5ExpandedCat(null)
     setShowModal(true)
   }
 
@@ -1913,11 +1937,107 @@ function DashboardInformes() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center">
-                <Label>Diagnóstico</Label>
-                {voiceField('diagnostico', 'diagnostico')}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Label>Diagnóstico DSM-5</Label>
+                  {voiceField('diagnostico', 'diagnostico')}
+                </div>
+                <Badge variant="outline" className="text-xs text-teal-700 border-teal-300">
+                  <BookOpen className="h-3 w-3 mr-1" /> DSM-5
+                </Badge>
               </div>
-              <Textarea value={form.diagnostico} onChange={e => setForm(f => ({ ...f, diagnostico: e.target.value }))} rows={2} placeholder="Diagnóstico clínico o usa el micrófono..." />
+              {/* Buscador DSM-5 */}
+              <div className="relative">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar diagnóstico DSM-5 (código o nombre)..."
+                      value={dsm5Query}
+                      onChange={e => setDsm5Query(e.target.value)}
+                      onFocus={() => { setShowDsm5Dropdown(true); if (e.target.value.length >= 2) setDsm5Results(buscarDiagnosticos(e.target.value)) }}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                {/* Dropdown de resultados */}
+                {showDsm5Dropdown && dsm5Results.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                    {dsm5Results.map((d, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-teal-50 border-b border-gray-50 last:border-0 transition-colors"
+                        onClick={() => {
+                          const texto = `${d.codigo} - ${d.nombre}`
+                          setForm(f => ({ ...f, diagnostico: f.diagnostico ? f.diagnostico + '\n' + texto : texto }))
+                          setDsm5Query('')
+                          setShowDsm5Dropdown(false)
+                          setDsm5Results([])
+                        }}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-mono bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded shrink-0 mt-0.5">{d.codigo}</span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{d.nombre}</p>
+                            <p className="text-xs text-gray-500">{d.categoria}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Dropdown de categorías cuando no hay búsqueda */}
+                {showDsm5Dropdown && dsm5Query.length < 2 && !dsm5ExpandedCat && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                    <div className="p-2 text-xs text-muted-foreground border-b">Categorías DSM-5</div>
+                    {CATEGORIAS_DSM5.map((cat, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-teal-50 border-b border-gray-50 last:border-0 text-sm transition-colors"
+                        onClick={() => setDsm5ExpandedCat(cat)}
+                      >
+                        <ChevronRight className="h-3 w-3 inline mr-2 text-teal-600" />{cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Categoría expandida */}
+                {showDsm5Dropdown && dsm5ExpandedCat && dsm5Query.length < 2 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto">
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 bg-teal-50 border-b font-medium text-sm text-teal-800 sticky top-0"
+                      onClick={() => setDsm5ExpandedCat(null)}
+                    >
+                      <ChevronLeft className="h-3 w-3 inline mr-1" /> {dsm5ExpandedCat}
+                    </button>
+                    {DIAGNOSTICOS_DSM5.filter(d => d.categoria === dsm5ExpandedCat).map((d, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-teal-50 border-b border-gray-50 last:border-0 transition-colors"
+                        onClick={() => {
+                          const texto = `${d.codigo} - ${d.nombre}`
+                          setForm(f => ({ ...f, diagnostico: f.diagnostico ? f.diagnostico + '\n' + texto : texto }))
+                          setDsm5ExpandedCat(null)
+                          setShowDsm5Dropdown(false)
+                        }}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-mono bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded shrink-0 mt-0.5">{d.codigo}</span>
+                          <p className="text-sm text-gray-900">{d.nombre}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Textarea con los diagnósticos seleccionados */}
+              <Textarea value={form.diagnostico} onChange={e => setForm(f => ({ ...f, diagnostico: e.target.value }))} rows={3} placeholder="Diagnósticos seleccionados del DSM-5 o escribe libremente..." className="mt-1" />
+              {/* Cerrar dropdown al hacer clic fuera */}
+              {showDsm5Dropdown && <div className="fixed inset-0 z-40" onClick={() => { setShowDsm5Dropdown(false); setDsm5ExpandedCat(null) }} />}
             </div>
 
             <div className="space-y-2">
