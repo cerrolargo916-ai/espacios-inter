@@ -1531,6 +1531,7 @@ function DashboardInformes() {
   const [dsm5Results, setDsm5Results] = useState<DiagnosticoDSM5[]>([])
   const [showDsm5Dropdown, setShowDsm5Dropdown] = useState(false)
   const [dsm5ExpandedCat, setDsm5ExpandedCat] = useState<string | null>(null)
+  const [dsm5Suggesting, setDsm5Suggesting] = useState(false)
   const voiceDictation = useVoiceDictation()
   const { toast } = useToast()
 
@@ -1942,9 +1943,55 @@ function DashboardInformes() {
                   <Label>Diagnóstico DSM-5</Label>
                   {voiceField('diagnostico', 'diagnostico')}
                 </div>
-                <Badge variant="outline" className="text-xs text-teal-700 border-teal-300">
-                  <BookOpen className="h-3 w-3 mr-1" /> DSM-5
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-teal-700 border-teal-300 hover:bg-teal-50"
+                    onClick={async () => {
+                      if (!form.motivoConsulta && !form.observaciones && !form.evolucion) {
+                        toast({ title: 'Información insuficiente', description: 'Completá el motivo de consulta u observaciones primero.', variant: 'destructive' })
+                        return
+                      }
+                      setDsm5Suggesting(true)
+                      try {
+                        const res = await fetch('/api/dsm5-suggest', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            motivoConsulta: form.motivoConsulta,
+                            observaciones: form.observaciones,
+                            evolucion: form.evolucion,
+                          })
+                        })
+                        const data = await res.json()
+                        if (data.diagnosticos && data.diagnosticos.length > 0) {
+                          const textos = data.diagnosticos.map((d: { codigo: string; nombre: string; probabilidad?: string; justificacion?: string }) => {
+                            let t = `${d.codigo} - ${d.nombre}`
+                            if (d.probabilidad) t += ` [${d.probabilidad}]`
+                            if (d.justificacion) t += `\n  → ${d.justificacion}`
+                            return t
+                          })
+                          setForm(f => ({ ...f, diagnostico: f.diagnostico ? f.diagnostico + '\n\n--- Sugerencia IA ---\n' + textos.join('\n') : '--- Sugerencia IA ---\n' + textos.join('\n') }))
+                          toast({ title: 'Diagnóstico sugerido', description: `Se sugirieron ${data.diagnosticos.length} diagnóstico(s) basados en la información clínica.` })
+                        } else {
+                          toast({ title: 'Sin sugerencias', description: data.nota || 'No se pudieron sugerir diagnósticos con la información proporcionada.' })
+                        }
+                      } catch {
+                        toast({ title: 'Error', description: 'No se pudo generar la sugerencia.', variant: 'destructive' })
+                      } finally {
+                        setDsm5Suggesting(false)
+                      }
+                    }}
+                    disabled={dsm5Suggesting}
+                  >
+                    {dsm5Suggesting ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analizando...</> : <><Sparkles className="h-3 w-3 mr-1" /> Sugerir con IA</>}
+                  </Button>
+                  <Badge variant="outline" className="text-xs text-teal-700 border-teal-300">
+                    <BookOpen className="h-3 w-3 mr-1" /> DSM-5
+                  </Badge>
+                </div>
               </div>
               {/* Buscador DSM-5 */}
               <div className="relative">
