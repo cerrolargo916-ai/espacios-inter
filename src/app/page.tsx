@@ -169,18 +169,26 @@ function useVoiceDictation() {
     recognition.interimResults = true
 
     let finalTranscript = ''
+    let lastFinalIndex = 0
 
     recognition.onresult = (event: { resultIndex: number; results: { isFinal: boolean; [index: number]: { transcript: string } }[] }) => {
       let interimTranscript = ''
+      let newFinalText = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
-          finalTranscript += result[0].transcript
-          callback(finalTranscript, true)
+          newFinalText += result[0].transcript
         } else {
           interimTranscript += result[0].transcript
-          callback(finalTranscript + interimTranscript, false)
         }
+      }
+      if (newFinalText) {
+        // Only send the NEW final text (not the accumulated transcript)
+        callback(newFinalText, true)
+        finalTranscript += newFinalText
+      } else {
+        // Interim results are for display only, not appended
+        callback(interimTranscript, false)
       }
     }
 
@@ -355,10 +363,14 @@ function VoiceButton({ fieldId, voiceDictation, onTranscript, existingText }: {
     if (isNotSupported) return
     voiceDictation.toggleListening(fieldId, (transcript, isFinal) => {
       if (isFinal) {
-        // Append to existing text with a space if there's existing content
-        const newText = existingText ? existingText + ' ' + transcript : transcript
-        onTranscript(newText)
+        // Append only the NEW transcript chunk to existing text
+        const trimmed = transcript.trim()
+        if (trimmed) {
+          const newText = existingText ? existingText + ' ' + trimmed : trimmed
+          onTranscript(newText)
+        }
       }
+      // Interim results are ignored — no more echo/repetition
     })
   }
 
