@@ -1988,7 +1988,11 @@ function DashboardInformes() {
                   >
                     {dsm5Suggesting ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analizando...</> : <><Sparkles className="h-3 w-3 mr-1" /> Sugerir con IA</>}
                   </Button>
-                  <Badge variant="outline" className="text-xs text-teal-700 border-teal-300">
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-teal-700 border-teal-300 cursor-pointer hover:bg-teal-50 hover:border-teal-400 transition-colors"
+                    onClick={() => { setShowDsm5Dropdown(!showDsm5Dropdown); setDsm5ExpandedCat(null); setDsm5Query(''); setDsm5Results([]) }}
+                  >
                     <BookOpen className="h-3 w-3 mr-1" /> DSM-5
                   </Badge>
                 </div>
